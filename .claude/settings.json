@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(npm test)",
+      "Bash(node .claude/hooks/check.mjs)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(npm run deploy:*)",
+      "Bash(npx hardhat run:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./**/.env)",
+      "Edit(./**/.env)",
+      "Read(./**/*.key)",
+      "Bash(cat .env)",
+      "Bash(rm -rf:*)",
+      "Bash(npx hardhat run --network mainnet:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "node .claude/hooks/check.mjs" }
+        ]
+      }
+    ]
+  }
+}

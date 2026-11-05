@@ -1,0 +1,20 @@
+# 3주차: push 하면 자동으로 검사한다. 실패하면 빨간 X, 통과하면 초록 체크
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    name: 하네스 검사
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 로컬 훅과 같은 검사 (README · CLAUDE.md)
+        run: node .claude/hooks/check.mjs
+      - name: 개인키 파일(.env)이 저장소에 올라오지 않았는지 확인
+        run: test ! -f .env

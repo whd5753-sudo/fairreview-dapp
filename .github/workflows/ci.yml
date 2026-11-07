@@ -1,4 +1,4 @@
-# 3주차: push 하면 자동으로 검사한다. 실패하면 빨간 X, 통과하면 초록 체크
+# 3·4주차: push 하면 자동으로 검사한다. 하나라도 실패하면 빨간 X, 모두 통과하면 초록 체크
 name: CI
 
 on:
@@ -18,3 +18,17 @@ jobs:
         run: node .claude/hooks/check.mjs
       - name: 개인키 파일(.env)이 저장소에 올라오지 않았는지 확인
         run: test ! -f .env
+
+  web:
+    name: 웹 테스트 (Vitest · 기대값 표)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test

@@ -1,4 +1,4 @@
-# 3·4·5주차: push 하면 자동으로 검사한다. 하나라도 실패하면 빨간 X, 모두 통과하면 초록 체크
+# 3·4·5·8주차: push 하면 자동으로 검사한다. 하나라도 실패하면 빨간 X, 모두 통과하면 초록 체크
 name: CI
 
 on:
@@ -17,7 +17,7 @@ jobs:
       - name: 로컬 훅과 같은 검사 (README · CLAUDE.md)
         run: node .claude/hooks/check.mjs
       - name: 개인키 파일(.env)이 저장소에 올라오지 않았는지 확인
-        run: test ! -f .env
+        run: test -z "$(git ls-files | grep -E '(^|/)\.env$')"
 
   web:
     name: 웹 테스트 · 빌드
@@ -31,7 +31,24 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - name: 테스트 (Vitest · 기대값 표)
+      - name: 테스트 (Vitest · 기대값 표 · 화면)
         run: npm test
-      - name: 빌드가 깨지지 않는지 (5단계)
+      - name: 빌드가 깨지지 않는지
         run: npm run build
+
+  contracts:
+    name: 컨트랙트 테스트 (Hardhat · 테스트 설계 표)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: 컴파일 (npm solc 0.8.24)
+        run: npx hardhat compile
+      - name: 테스트
+        run: npx hardhat test

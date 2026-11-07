@@ -17,15 +17,21 @@ else {
   if (rules.length < 3) problems.push(`CLAUDE.md 의 규칙이 ${rules.length}개뿐입니다 (3개 이상 필요)`);
 }
 
-// 4단계: web 테스트 (설치가 끝난 뒤부터 검사)
-if (existsSync("web/package.json") && existsSync("web/node_modules")) {
+// 설치가 끝난 폴더만 테스트한다
+function runTests(dir, command, label) {
+  if (!existsSync(`${dir}/package.json`) || !existsSync(`${dir}/node_modules`)) return;
   try {
-    execSync("npm test", { cwd: "web", stdio: "pipe", timeout: 120000 });
+    execSync(command, { cwd: dir, stdio: "pipe", timeout: 180000 });
   } catch (e) {
     const out = (e.stdout?.toString() || "") + (e.stderr?.toString() || "");
-    problems.push("web 테스트 실패 (기대값 표와 다름):\n" + out.slice(-1500));
+    problems.push(`${label}:\n` + out.slice(-1500));
   }
 }
+
+// 4단계: web 테스트 (기대값 표 · 화면)
+runTests("web", "npm test", "web 테스트 실패 (기대값 표와 다름)");
+// 8단계: 컨트랙트 테스트 (docs/테스트설계.md)
+runTests("contracts", "npx hardhat test", "컨트랙트 테스트 실패 (테스트 설계 표와 다름)");
 
 if (problems.length) {
   console.error("[검사 실패]\n- " + problems.join("\n- "));

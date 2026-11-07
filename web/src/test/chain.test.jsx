@@ -192,3 +192,13 @@ describe("블록체인에 제출", () => {
     expect(await screen.findByText("MetaMask 에서 요청을 취소했습니다")).toBeTruthy();
   });
 });
+
+describe("9단계 보안 점검", () => {
+  it("12. 제출 칸에 '공개 · 지울 수 없음 · 개인정보 금지' 안내가 있다 (T4)", async () => {
+    window.ethereum = fakeMetaMask();
+    renderAt("/stores/1/review");
+    await connectWallet();
+    await checkExample("예시: 게시");
+    expect(screen.getByText(/누구나 볼 수 있고 지울 수 없습니다/)).toBeTruthy();
+  });
+});

@@ -6,7 +6,8 @@
   "type": "commonjs",
   "scripts": {
     "compile": "hardhat compile",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "mutation": "node scripts/mutation.js"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "~2.0.9",

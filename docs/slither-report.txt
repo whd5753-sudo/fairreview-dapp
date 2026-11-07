@@ -1,0 +1,9 @@
+INFO:Detectors:
+FairReview.submitReview(uint256,uint8,string) (contracts/FairReview.sol#140-154) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > p.paidAt + REVIEW_WINDOW (contracts/FairReview.sol#146)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+FairReview.admin (contracts/FairReview.sol#38) should be immutable 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variables-that-could-be-declared-immutable
+INFO:Slither:. analyzed (1 contracts with 93 detectors), 2 result(s) found

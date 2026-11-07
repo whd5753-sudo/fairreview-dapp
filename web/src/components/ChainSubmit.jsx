@@ -74,6 +74,10 @@ export default function ChainSubmit({ store, rating, content, verdict }) {
   return (
     <section className="card chain-submit" aria-labelledby="chain-title">
       <h2 id="chain-title">블록체인에 제출</h2>
+      {/* 9단계 보안 점검 T4: 블록체인 기록은 공개 · 영구 */}
+      <p className="muted small">
+        블록체인에 올린 리뷰는 누구나 볼 수 있고 지울 수 없습니다. 이름 · 전화번호 같은 개인정보는 쓰지 마세요.
+      </p>
 
       {!account && <p className="status">지갑을 연결해야 제출할 수 있습니다. 머리글의 '지갑 연결'을 눌러 주세요.</p>}
 

@@ -1,4 +1,4 @@
-# 3·4주차: push 하면 자동으로 검사한다. 하나라도 실패하면 빨간 X, 모두 통과하면 초록 체크
+# 3·4·5주차: push 하면 자동으로 검사한다. 하나라도 실패하면 빨간 X, 모두 통과하면 초록 체크
 name: CI
 
 on:
@@ -20,7 +20,7 @@ jobs:
         run: test ! -f .env
 
   web:
-    name: 웹 테스트 (Vitest · 기대값 표)
+    name: 웹 테스트 · 빌드
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -31,4 +31,7 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - run: npm test
+      - name: 테스트 (Vitest · 기대값 표)
+        run: npm test
+      - name: 빌드가 깨지지 않는지 (5단계)
+        run: npm run build

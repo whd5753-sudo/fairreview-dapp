@@ -5,7 +5,7 @@ import { analyzeText, decide, charCount } from "./engine.js";
 const rows = [
   { no: 1, content: "오늘 점심에 김치찌개 시켰는데 국물이 진하고 고기도 넉넉했어요. 9천원이고 사장님도 친절하셨어요", rating: 5, len: 43, score: 0, verdict: "게시" },
   { no: 2, content: "맛있어요", rating: 5, len: 4, score: 150, verdict: "게시" },
-  { no: 3, content: "체험단으로 무료로 제공받았어요 완전 대박 최고 강추 인생맛집 무조건 가세요", rating: 5, len: 32, score: 900, verdict: "거부" },
+  { no: 3, content: "체험단으로 무료로 제공받았어요 완전 대박 최고 강추 인생맛집 무조건 가세요", rating: 5, len: 32, score: 990, verdict: "거부" },
   { no: 4, content: "체험단으로 다녀왔어요. 분위기 괜찮았어요", rating: 4, len: 19, score: 550, verdict: "보류" },
   { no: 5, content: "완전 대박 최고 맛집", rating: 5, len: 8, score: 270, verdict: "게시" },
   { no: 6, content: "그냥 그래요", rating: 3, len: 5, score: 100, verdict: "게시" },

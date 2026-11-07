@@ -11,7 +11,11 @@ vi.mock("../contracts/client.js", () => ({
   fetchPoints: vi.fn().mockResolvedValue(0),
   fetchPayment: vi.fn().mockResolvedValue(null),
   fetchStoreReviews: vi.fn().mockResolvedValue([]),
+  fetchAdmin: vi.fn().mockResolvedValue("0x0000000000000000000000000000000000000001"),
+  fetchHeldReviews: vi.fn().mockResolvedValue([]),
+  requestVerdict: vi.fn(),
   sendReview: vi.fn(),
+  sendResolveHeld: vi.fn(),
 }));
 
 function renderAt(path) {

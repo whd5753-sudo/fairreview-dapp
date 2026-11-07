@@ -3,7 +3,7 @@ import { fetchStoreReviews } from "../contracts/client.js";
 import { txUrl } from "../contracts/fairReview.js";
 import { shortAddress } from "../state/WalletContext.jsx";
 
-// 8단계: 블록체인(ReviewSubmitted 이벤트)에 기록된 이 가게의 리뷰. 지갑 없이도 보인다.
+// 8 · 10단계: 블록체인에 게시된 이 가게의 리뷰 (바로 게시 + 보류 후 승인). 지갑 없이도 보인다.
 // 로딩 · 오류 · 빈 목록을 각각 보여 준다 (6주차 체크리스트 6번).
 export default function ChainReviews({ storeId }) {
   const [state, setState] = useState({ status: "loading", reviews: [] });
@@ -44,7 +44,8 @@ export default function ChainReviews({ storeId }) {
               <span className="rating">별점 {review.rating}점</span>
               <p>{review.content}</p>
               <p className="muted small">
-                결제 {review.paymentId}번 · {shortAddress(review.reviewer)} ·{" "}
+                결제 {review.paymentId}번 · AI 점수 {review.aiScore}
+                {review.afterReview ? " · 검토 후 게시" : ""} · {shortAddress(review.reviewer)} ·{" "}
                 <a href={txUrl(review.txHash)} target="_blank" rel="noreferrer">
                   Etherscan
                 </a>

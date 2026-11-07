@@ -1,16 +1,29 @@
-// 8단계 화면 테스트 — docs/화면연결설계.md 5절. 블록체인은 가짜(mock)로 바꿔서 돌린다.
+// 8 · 10단계 화면 테스트 — docs/화면연결설계.md 5절, docs/오라클설계.md. 블록체인 · 오라클은 가짜(mock)로 바꿔서 돌린다.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import App from "../App.jsx";
 import { WalletProvider } from "../state/WalletContext.jsx";
-import { fetchPayment, fetchPoints, fetchStoreReviews, sendReview } from "../contracts/client.js";
+import {
+  fetchAdmin,
+  fetchHeldReviews,
+  fetchPayment,
+  fetchPoints,
+  fetchStoreReviews,
+  requestVerdict,
+  sendResolveHeld,
+  sendReview,
+} from "../contracts/client.js";
 
 vi.mock("../contracts/client.js", () => ({
   fetchPoints: vi.fn(),
   fetchPayment: vi.fn(),
   fetchStoreReviews: vi.fn(),
+  fetchAdmin: vi.fn(),
+  fetchHeldReviews: vi.fn(),
+  requestVerdict: vi.fn(),
   sendReview: vi.fn(),
+  sendResolveHeld: vi.fn(),
 }));
 
 const CUSTOMER = "0x24fa47419CE55143138B2D615bD426AEe2c7f4d0";
@@ -57,7 +70,19 @@ beforeEach(() => {
   fetchStoreReviews.mockResolvedValue([]);
   fetchPayment.mockResolvedValue({ storeId: 1, customer: CUSTOMER, reviewed: false, paidAt: 0 });
   sendReview.mockResolvedValue({ hash: "0xabc", wait: vi.fn().mockResolvedValue({}) });
+  requestVerdict.mockResolvedValue({ score: 0, verdict: "게시", reasons: [], signature: "0xsig" });
+  fetchAdmin.mockResolvedValue(CUSTOMER); // 테스트에서는 Account 1 이 관리자
+  fetchHeldReviews.mockResolvedValue([]);
+  sendResolveHeld.mockResolvedValue({ hash: "0xdef", wait: vi.fn().mockResolvedValue({}) });
 });
+
+// 결제 번호 1 을 넣고 제출 버튼까지
+async function submitPayment(id = "1") {
+  fireEvent.change(screen.getByLabelText("결제 번호"), { target: { value: id } });
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "블록체인에 제출" }));
+  });
+}
 
 afterEach(() => {
   cleanup();
@@ -97,11 +122,13 @@ describe("블록체인에 제출", () => {
     expect(screen.queryByRole("button", { name: "블록체인에 제출" })).toBeNull();
   });
 
-  it("5. 보류 판정 → 지금은 제출할 수 없다는 안내", async () => {
+  it("5. 보류 판정 → 관리자 검토 안내와 함께 제출할 수 있다 (10단계)", async () => {
+    window.ethereum = fakeMetaMask();
     renderAt("/stores/1/review");
+    await connectWallet();
     await checkExample("예시: 보류");
-    expect(screen.getByText(/보류 판정은 사람 검토가 필요해/)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "블록체인에 제출" })).toBeNull();
+    expect(screen.getByText(/관리자가 검토한 뒤 게시됩니다/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "블록체인에 제출" })).toBeTruthy();
   });
 
   it("6. 게시 판정 + 지갑 없음 → 지갑 연결 안내", async () => {
@@ -119,7 +146,7 @@ describe("블록체인에 제출", () => {
     expect(screen.queryByRole("button", { name: "블록체인에 제출" })).toBeNull();
   });
 
-  it("8. 게시 + Sepolia + 결제 1번 → MetaMask 서명 → 제출 완료 · Etherscan 링크 · 포인트 다시 읽기", async () => {
+  it("8. 게시 + Sepolia + 결제 1번 → 오라클 서명 → MetaMask 서명 → 제출 완료 · Etherscan 링크 · 포인트 다시 읽기", async () => {
     window.ethereum = fakeMetaMask();
     renderAt("/stores/1/review");
     await connectWallet();
@@ -132,10 +159,18 @@ describe("블록체인에 제출", () => {
     });
 
     expect(await screen.findByText(/제출 완료/)).toBeTruthy();
+    expect(requestVerdict).toHaveBeenCalledWith({
+      paymentId: 1,
+      reviewer: CUSTOMER,
+      rating: 5,
+      content: expect.stringContaining("김치찌개"),
+    });
     expect(sendReview).toHaveBeenCalledWith(window.ethereum, {
       paymentId: 1,
       rating: 5,
       content: expect.stringContaining("김치찌개"),
+      score: 0,
+      signature: "0xsig",
     });
     expect(screen.getByRole("link", { name: "Etherscan 에서 트랜잭션 보기" }).getAttribute("href")).toBe(
       "https://sepolia.etherscan.io/tx/0xabc",
@@ -200,5 +235,92 @@ describe("9단계 보안 점검", () => {
     await connectWallet();
     await checkExample("예시: 게시");
     expect(screen.getByText(/누구나 볼 수 있고 지울 수 없습니다/)).toBeTruthy();
+  });
+});
+
+describe("10단계 AI 오라클", () => {
+  it("13. 오라클 서버가 꺼져 있으면 → 'npm start' 안내, MetaMask 는 안 뜬다", async () => {
+    requestVerdict.mockRejectedValue("OracleUnavailable");
+    window.ethereum = fakeMetaMask();
+    renderAt("/stores/1/review");
+    await connectWallet();
+    await checkExample("예시: 게시");
+    await submitPayment();
+    expect(await screen.findByText(/AI 오라클 서버에 연결할 수 없습니다/)).toBeTruthy();
+    expect(sendReview).not.toHaveBeenCalled();
+  });
+
+  it("14. 오라클 판정이 거부면 → 서명 요청 없이 막는다 (화면 미리 보기를 속여도 오라클이 판단)", async () => {
+    requestVerdict.mockResolvedValue({ score: 990, verdict: "거부", reasons: [], signature: "0xsig" });
+    window.ethereum = fakeMetaMask();
+    renderAt("/stores/1/review");
+    await connectWallet();
+    await checkExample("예시: 게시");
+    await submitPayment();
+    expect(await screen.findByText(/AI 판정 거부/)).toBeTruthy();
+    expect(sendReview).not.toHaveBeenCalled();
+  });
+
+  it("15. 보류 리뷰 제출 → '보류로 기록되었습니다' (점수 표시)", async () => {
+    requestVerdict.mockResolvedValue({ score: 550, verdict: "보류", reasons: [], signature: "0xsig" });
+    window.ethereum = fakeMetaMask();
+    renderAt("/stores/1/review");
+    await connectWallet();
+    await checkExample("예시: 보류");
+    await submitPayment("2");
+    expect(await screen.findByText(/보류로 기록되었습니다 \(AI 점수 550\)/)).toBeTruthy();
+    expect(sendReview.mock.calls[0][1]).toMatchObject({ paymentId: 2, score: 550 });
+  });
+
+  it("16. 컨트랙트가 오라클 서명을 거부 → 한국어 안내", async () => {
+    sendReview.mockRejectedValue({ revert: { name: "InvalidOracleSignature" } });
+    window.ethereum = fakeMetaMask();
+    renderAt("/stores/1/review");
+    await connectWallet();
+    await checkExample("예시: 게시");
+    await submitPayment();
+    expect(await screen.findByText(/AI 오라클 서명이 맞지 않습니다/)).toBeTruthy();
+  });
+
+  it("17. 가게 리뷰 목록에 AI 점수와 '검토 후 게시' 표시", async () => {
+    fetchStoreReviews.mockResolvedValue([
+      { paymentId: 2, reviewer: CUSTOMER, rating: 4, content: "검토 받은 리뷰", aiScore: 550, txHash: "0x2", afterReview: true },
+    ]);
+    renderAt("/stores/1");
+    expect(await screen.findByText("검토 받은 리뷰")).toBeTruthy();
+    expect(screen.getByText(/AI 점수 550 · 검토 후 게시/)).toBeTruthy();
+  });
+});
+
+describe("10단계 보류 검토 화면 (/admin)", () => {
+  const HELD = { paymentId: 2, storeId: 1, reviewer: CUSTOMER, rating: 4, content: "보류된 리뷰", aiScore: 550, txHash: "0x9" };
+
+  it("18. 관리자가 아니면 검토 버튼이 없다", async () => {
+    fetchAdmin.mockResolvedValue(OTHER);
+    fetchHeldReviews.mockResolvedValue([HELD]);
+    window.ethereum = fakeMetaMask();
+    renderAt("/admin");
+    await connectWallet();
+    expect(await screen.findByText("보류된 리뷰")).toBeTruthy();
+    expect(screen.getByText(/관리자 지갑으로 연결해야 검토할 수 있습니다/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "승인" })).toBeNull();
+  });
+
+  it("19. 관리자가 승인 → resolveHeld(2, true) · '승인했습니다'", async () => {
+    fetchHeldReviews.mockResolvedValue([HELD]);
+    window.ethereum = fakeMetaMask();
+    renderAt("/admin");
+    await connectWallet();
+    expect(await screen.findByText(/온정 김치찌개 · 별점 4점 · AI 점수 550/)).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "승인" }));
+    });
+    expect(await screen.findByText(/승인했습니다/)).toBeTruthy();
+    expect(sendResolveHeld).toHaveBeenCalledWith(window.ethereum, 2, true);
+  });
+
+  it("20. 보류 리뷰가 없으면 안내", async () => {
+    renderAt("/admin");
+    expect(await screen.findByText("검토를 기다리는 리뷰가 없습니다.")).toBeTruthy();
   });
 });

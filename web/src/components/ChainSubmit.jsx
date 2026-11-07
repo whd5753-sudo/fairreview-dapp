@@ -1,20 +1,20 @@
 import { useState } from "react";
-import { fetchPayment, sendReview } from "../contracts/client.js";
+import { fetchPayment, requestVerdict, sendReview } from "../contracts/client.js";
 import { toKoreanError } from "../contracts/errors.js";
 import { txUrl } from "../contracts/fairReview.js";
 import { getProvider, useWallet } from "../state/WalletContext.jsx";
 
-// 8단계: AI 검사에서 '게시'를 받은 리뷰를 블록체인(FairReview.submitReview)에 제출한다.
-// 순서: ① 결제 번호를 공개 노드로 미리 확인 → ② MetaMask 서명 → ③ 블록에 담길 때까지 기다림
-// 보류 · 거부 리뷰는 제출하지 않는다 (보류는 10단계 오라클 · 사람 검토에서 다룬다).
+// 8 · 10단계: AI 검사를 거친 리뷰를 블록체인(FairReview.submitReview)에 제출한다.
+// 순서: ① 결제 번호 미리 확인 → ② AI 오라클에 판정 · 서명 받기 → ③ MetaMask 서명 → ④ 블록에 담길 때까지 기다림
+// 게시(400 미만) = 바로 게시 + 10포인트, 보류(400~699) = 관리자 검토 후 게시, 거부(700 이상) = 기록 불가
 export default function ChainSubmit({ store, rating, content, verdict }) {
   const { account, isSepolia, switchToSepolia, refreshPoints } = useWallet();
   const [paymentId, setPaymentId] = useState("");
-  const [status, setStatus] = useState("idle"); // idle · checking · signing · mining · done · error
+  const [status, setStatus] = useState("idle"); // idle · checking · oracle · signing · mining · done · error
   const [message, setMessage] = useState("");
   const [txHash, setTxHash] = useState(null);
 
-  const busy = status === "checking" || status === "signing" || status === "mining";
+  const busy = ["checking", "oracle", "signing", "mining"].includes(status);
   const idNumber = Number(paymentId);
   const validId = Number.isInteger(idNumber) && idNumber >= 1;
 
@@ -23,14 +23,6 @@ export default function ChainSubmit({ store, rating, content, verdict }) {
       <section className="card chain-submit">
         <h2>블록체인에 제출</h2>
         <p className="status error">거부 판정을 받은 리뷰는 블록체인에 올릴 수 없습니다.</p>
-      </section>
-    );
-  }
-  if (verdict === "보류") {
-    return (
-      <section className="card chain-submit">
-        <h2>블록체인에 제출</h2>
-        <p className="status">보류 판정은 사람 검토가 필요해 지금은 제출할 수 없습니다 (10단계에서 연결).</p>
       </section>
     );
   }
@@ -52,19 +44,35 @@ export default function ChainSubmit({ store, rating, content, verdict }) {
       if (payment.customer.toLowerCase() !== account.toLowerCase()) return fail("NotPaymentCustomer");
       if (payment.reviewed) return fail("AlreadyReviewed");
 
-      // ② 서명
-      setStatus("signing");
-      setMessage("MetaMask 창에서 내용을 확인하고 승인해 주세요");
-      const tx = await sendReview(getProvider(), { paymentId: idNumber, rating, content });
+      // ② AI 오라클 — 화면의 미리 보기가 아니라 오라클이 서명한 점수로 제출한다
+      setStatus("oracle");
+      setMessage("AI 오라클에 판정과 서명을 받는 중…");
+      const signed = await requestVerdict({ paymentId: idNumber, reviewer: account, rating, content });
+      if (signed.verdict === "거부") return fail("SuspectedFakeReview");
 
-      // ③ 기록 대기
+      // ③ 서명
+      setStatus("signing");
+      setMessage(`AI 점수 ${signed.score} (${signed.verdict}) — MetaMask 창에서 확인하고 승인해 주세요`);
+      const tx = await sendReview(getProvider(), {
+        paymentId: idNumber,
+        rating,
+        content,
+        score: signed.score,
+        signature: signed.signature,
+      });
+
+      // ④ 기록 대기
       setStatus("mining");
       setTxHash(tx.hash);
       setMessage("블록체인에 기록하는 중… (보통 15초 안팎)");
       await tx.wait();
 
       setStatus("done");
-      setMessage("제출 완료! 리뷰가 블록체인에 기록되었고 10포인트를 받았습니다.");
+      setMessage(
+        signed.verdict === "보류"
+          ? `보류로 기록되었습니다 (AI 점수 ${signed.score}). 관리자가 승인하면 게시되고 10포인트를 받습니다.`
+          : `제출 완료! 리뷰가 블록체인에 기록되었고 10포인트를 받았습니다 (AI 점수 ${signed.score}).`,
+      );
       refreshPoints();
     } catch (e) {
       fail(e);
@@ -78,6 +86,9 @@ export default function ChainSubmit({ store, rating, content, verdict }) {
       <p className="muted small">
         블록체인에 올린 리뷰는 누구나 볼 수 있고 지울 수 없습니다. 이름 · 전화번호 같은 개인정보는 쓰지 마세요.
       </p>
+      {verdict === "보류" && (
+        <p className="muted small">보류 판정 리뷰는 바로 게시되지 않고, 관리자가 검토한 뒤 게시됩니다.</p>
+      )}
 
       {!account && <p className="status">지갑을 연결해야 제출할 수 있습니다. 머리글의 '지갑 연결'을 눌러 주세요.</p>}
 

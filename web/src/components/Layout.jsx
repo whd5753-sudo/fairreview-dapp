@@ -28,6 +28,9 @@ export default function Layout() {
 
       <footer className="footer">
         <p>FairReview · Sepolia 테스트넷 실습용 · 가게 · 리뷰는 예시 데이터</p>
+        <p>
+          <Link to="/admin">관리자: 보류 리뷰 검토</Link>
+        </p>
       </footer>
     </div>
   );

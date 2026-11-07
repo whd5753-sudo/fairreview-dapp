@@ -37,6 +37,8 @@ function send(res, status, body, origin) {
     headers["access-control-allow-origin"] = origin;
     headers["access-control-allow-headers"] = "content-type";
     headers["access-control-allow-methods"] = "POST, GET, OPTIONS";
+    // 배포된 https 사이트가 내 컴퓨터(localhost)의 서버를 부를 때 브라우저가 묻는 허락 (Private Network Access)
+    headers["access-control-allow-private-network"] = "true";
   }
   res.writeHead(status, headers);
   res.end(body === null ? "" : JSON.stringify(body));
@@ -44,6 +46,8 @@ function send(res, status, body, origin) {
 
 const server = createServer(async (req, res) => {
   const origin = req.headers.origin;
+  // 브라우저에서 온 요청은 우리 화면(localhost:5173 · GitHub Pages)만 받는다
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) return send(res, 403, { error: "허용되지 않은 사이트" }, origin);
   if (req.method === "OPTIONS") return send(res, 204, null, origin);
   if (req.method === "GET" && req.url === "/health") {
     return send(res, 200, { ok: true, oracle: wallet.address, ...config }, origin);
@@ -61,7 +65,8 @@ const server = createServer(async (req, res) => {
     send(res, 200, result, origin);
   } catch (e) {
     const status = e instanceof BadRequest || e instanceof SyntaxError ? 400 : 500;
-    send(res, status, { error: status === 400 ? e.message : "오라클 내부 오류" }, origin);
+    const message = e instanceof SyntaxError ? "JSON 형식이 아닙니다" : e.message;
+    send(res, status, { error: status === 400 ? message : "오라클 내부 오류" }, origin);
   }
 });
 

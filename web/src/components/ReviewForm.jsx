@@ -1,5 +1,5 @@
-import { charCount } from "../ai/engine.js";
-
+// 입력 제한과 카운터는 같은 기준(공백 포함, content.length)을 쓴다.
+// engine.js 의 charCount(공백 제외)는 점수 계산에만 쓴다.
 const MAX_LENGTH = 300;
 
 // docs/기대값표.md 의 1번(게시) · 4번(보류) · 3번(거부) 행
@@ -70,7 +70,7 @@ export default function ReviewForm({
           aria-describedby="char-count"
         />
         <p className="char-count" id="char-count">
-          글자 수 {charCount(content)} / {MAX_LENGTH}
+          글자 수 {content.length} / {MAX_LENGTH} (공백 포함)
         </p>
       </div>
 

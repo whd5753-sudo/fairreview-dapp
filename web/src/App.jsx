@@ -1,51 +1,23 @@
-import { useState } from "react";
-import { analyzeText, decide } from "./ai/engine.js";
-import ReviewForm from "./components/ReviewForm.jsx";
-import ResultCard from "./components/ResultCard.jsx";
+import { Route, Routes } from "react-router";
+import Layout from "./components/Layout.jsx";
+import Home from "./pages/Home.jsx";
+import StoreList from "./pages/StoreList.jsx";
+import StoreDetail from "./pages/StoreDetail.jsx";
+import WriteReview from "./pages/WriteReview.jsx";
+import NotFound from "./pages/NotFound.jsx";
 
-// 상태(내용 · 별점 · 결과)는 App 에만 둔다. 점수 · 판정은 engine.js 에만 맡긴다.
+// 주소 → 화면 표 (docs/라우팅설계.md 1절). 공통 부분은 Layout, 가운데는 Outlet.
+// 라우터(BrowserRouter / MemoryRouter)는 바깥(main.jsx / 테스트)에서 감싼다.
 export default function App() {
-  const [content, setContent] = useState("");
-  const [rating, setRating] = useState(5);
-  const [result, setResult] = useState(null);
-
-  // 입력이 바뀌면 이전 결과는 지운다
-  function changeContent(next) {
-    setContent(next);
-    setResult(null);
-  }
-  function changeRating(next) {
-    setRating(next);
-    setResult(null);
-  }
-  function fillExample(example) {
-    setContent(example.content);
-    setRating(example.rating);
-    setResult(null);
-  }
-
-  function check() {
-    const { score, reasons } = analyzeText(content, rating);
-    setResult({ score, reasons, verdict: decide(score) });
-  }
-
   return (
-    <div className="page">
-      <header className="header">
-        <h1>FairReview</h1>
-        <p>결제한 손님만 쓰는 공정한 리뷰</p>
-      </header>
-      <main>
-        <ReviewForm
-          content={content}
-          rating={rating}
-          onContentChange={changeContent}
-          onRatingChange={changeRating}
-          onExample={fillExample}
-          onCheck={check}
-        />
-        {result && <ResultCard result={result} />}
-      </main>
-    </div>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<Home />} />
+        <Route path="stores" element={<StoreList />} />
+        <Route path="stores/:id" element={<StoreDetail />} />
+        <Route path="stores/:id/review" element={<WriteReview />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
   );
 }

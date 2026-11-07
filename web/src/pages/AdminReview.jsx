@@ -8,7 +8,7 @@ import { STORES } from "../data/stores.js";
 // 10단계: 보류 리뷰 검토 (관리자 = 컨트랙트 admin). 가게 사장님은 이해관계가 있어 검토하지 않는다.
 // 승인 → 게시 + 손님 10포인트, 거절 → 게시 안 함. 최종 권한 검사는 컨트랙트(onlyAdmin)가 한다.
 export default function AdminReview() {
-  const { account, isSepolia, switchToSepolia } = useWallet();
+  const { account, isSepolia, switchToSepolia, refreshPoints } = useWallet();
   const [admin, setAdmin] = useState(null);
   const [state, setState] = useState({ status: "loading", reviews: [] });
   const [action, setAction] = useState({}); // paymentId → { status, message, txHash }
@@ -42,6 +42,7 @@ export default function AdminReview() {
         ...a,
         [paymentId]: { status: "done", message: approve ? "승인했습니다 (게시 + 10포인트)" : "거절했습니다", txHash: tx.hash },
       }));
+      refreshPoints(); // 11단계 라이브 시험에서 발견: 승인 뒤 머리글 포인트가 그대로였음 (관리자 = 손님인 경우)
     } catch (e) {
       setAction((a) => ({ ...a, [paymentId]: { status: "error", message: toKoreanError(e) } }));
     }

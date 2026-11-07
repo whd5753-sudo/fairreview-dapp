@@ -14,9 +14,6 @@ writeFileSync(
   [
     "# 10단계 AI 오라클 — 테스트 전용. 절대 커밋 · 공유하지 말 것 (.gitignore 에 .env 포함)",
     `ORACLE_PRIVATE_KEY=${wallet.privateKey}`,
-    "# 10단계 컨트랙트를 배포한 뒤 그 주소를 적는다",
-    "ORACLE_CONTRACT=",
-    "CHAIN_ID=11155111",
     "",
   ].join("\n"),
 );

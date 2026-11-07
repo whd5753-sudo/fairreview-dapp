@@ -306,17 +306,20 @@ describe("10단계 보류 검토 화면 (/admin)", () => {
     expect(screen.queryByRole("button", { name: "승인" })).toBeNull();
   });
 
-  it("19. 관리자가 승인 → resolveHeld(2, true) · '승인했습니다'", async () => {
+  it("19. 관리자가 승인 → resolveHeld(2, true) · '승인했습니다' · 포인트 다시 읽기", async () => {
     fetchHeldReviews.mockResolvedValue([HELD]);
     window.ethereum = fakeMetaMask();
     renderAt("/admin");
     await connectWallet();
     expect(await screen.findByText(/온정 김치찌개 · 별점 4점 · AI 점수 550/)).toBeTruthy();
+    const pointReadsBefore = fetchPoints.mock.calls.length;
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "승인" }));
     });
     expect(await screen.findByText(/승인했습니다/)).toBeTruthy();
     expect(sendResolveHeld).toHaveBeenCalledWith(window.ethereum, 2, true);
+    // 승인 뒤 머리글 포인트를 다시 읽는다 (11단계 라이브 시험에서 발견한 버그)
+    expect(fetchPoints.mock.calls.length).toBeGreaterThan(pointReadsBefore);
   });
 
   it("20. 보류 리뷰가 없으면 안내", async () => {

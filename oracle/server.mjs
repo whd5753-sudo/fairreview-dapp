@@ -1,16 +1,19 @@
 // 10단계: AI 오라클 서버 — POST /sign 으로 리뷰를 받아 AI 판정 점수에 서명해 돌려준다.
-// 실행: oracle 폴더에서  npm start   (먼저 npm run keygen 으로 oracle/.env 를 만든다)
+// 실행: oracle 폴더에서  npm start   (먼저 npm run keygen 으로 oracle/.env 를 만든다, 컨트랙트 주소는 config.json)
 // 개인키는 oracle/.env 에만 있다 (.gitignore 로 커밋 안 됨, Claude 는 읽지 못하게 settings.json 에서 막음).
 import { createServer } from "node:http";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { Wallet, getAddress } from "ethers";
 import { BadRequest, judge } from "./judge.mjs";
 
 const ENV = new URL("./.env", import.meta.url);
 if (existsSync(ENV)) process.loadEnvFile(ENV); // Node 20.12+ 내장 (.env 읽기)
 
-const { ORACLE_PRIVATE_KEY, ORACLE_CONTRACT } = process.env;
-const CHAIN_ID = Number(process.env.CHAIN_ID ?? 11155111); // Sepolia
+// 컨트랙트 주소 · 체인은 공개 정보라 oracle/config.json 에 둔다 (.env 에 적으면 그 값이 우선)
+const CONFIG = JSON.parse(readFileSync(new URL("./config.json", import.meta.url), "utf8"));
+const { ORACLE_PRIVATE_KEY } = process.env;
+const ORACLE_CONTRACT = process.env.ORACLE_CONTRACT || CONFIG.contract;
+const CHAIN_ID = Number(process.env.CHAIN_ID || CONFIG.chainId); // Sepolia
 const PORT = Number(process.env.PORT ?? 8787);
 const ALLOWED_ORIGINS = ["http://localhost:5173", "https://whd5753-sudo.github.io"];
 const MAX_BODY = 4096;
@@ -20,7 +23,7 @@ if (!ORACLE_PRIVATE_KEY) {
   process.exit(1);
 }
 if (!ORACLE_CONTRACT) {
-  console.error("oracle/.env 에 ORACLE_CONTRACT (10단계 컨트랙트 주소) 를 적어 주세요");
+  console.error("oracle/config.json 의 contract 에 10단계 컨트랙트 주소를 적어 주세요");
   process.exit(1);
 }
 if (![11155111, 31337].includes(CHAIN_ID)) {

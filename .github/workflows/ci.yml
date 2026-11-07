@@ -1,4 +1,4 @@
-# 3·4·5·8주차: push 하면 자동으로 검사한다. 하나라도 실패하면 빨간 X, 모두 통과하면 초록 체크
+# 3·4·5·8·10단계: push 하면 자동으로 검사한다. 하나라도 실패하면 빨간 X, 모두 통과하면 초록 체크
 name: CI
 
 on:
@@ -48,7 +48,25 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      - name: 오라클 서명 코드 설치 (테스트가 oracle/sign.mjs 로 서명한다)
+        run: npm ci --prefix ../oracle
       - name: 컴파일 (npm solc 0.8.24)
         run: npx hardhat compile
       - name: 테스트
         run: npx hardhat test
+
+  oracle:
+    name: AI 오라클 테스트 (서명 · 판정)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: oracle
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+      - name: 오라클 개인키(.env)가 저장소에 없는지
+        run: test -z "$(git ls-files | grep -E '(^|/)\.env$')"

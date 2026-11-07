@@ -20,6 +20,12 @@ const MUTANTS = [
   ["M9 비상 중지 검사", "if (paused) revert ContractPaused();"],
   ["M10 별점 범위 검사", "if (rating < 1 || rating > 5) revert InvalidRating(rating);"],
   ["M11 금액 범위 검사", "if (amount == 0 || amount > MAX_AMOUNT) revert InvalidAmount();"],
+  // 10단계: AI 오라클
+  ["M12 오라클 서명 확인", "if (err != ECDSA.RecoverError.NoError || signer != oracle) revert InvalidOracleSignature();"],
+  ["M13 거부 점수(700) 차단", "if (score >= REJECT_SCORE) revert SuspectedFakeReview(score);"],
+  ["M14 점수 범위 검사", "if (score > MAX_SCORE) revert InvalidScore(score);"],
+  ["M15 보류 상태만 검토", "if (reviewStatus[paymentId] != ReviewStatus.Held) revert NotHeld(paymentId);"],
+  ["M16 오라클 주소 0 금지", "if (oracle_ == address(0)) revert ZeroAddress();"],
 ];
 
 const original = readFileSync(FILE, "utf8");
@@ -44,7 +50,7 @@ try {
       out = (e.stdout?.toString() || "") + (e.stderr?.toString() || "");
     }
     // 실패한 테스트 번호(A1, C4 ...)를 모은다
-    const failed = [...out.matchAll(/^\s+\d+\) FairReview[^\n]*\n[^\n]*\n\s+([A-E]\d+)/gm)].map((m) => m[1]);
+    const failed = [...out.matchAll(/^\s+\d+\) FairReview[^\n]*\n[^\n]*\n\s+([A-F]\d+)/gm)].map((m) => m[1]);
     results.push([name, failed.length ? `잡힘 ✔ (${[...new Set(failed)].join(", ")})` : "놓침 ✘ — 이 검사를 지켜 주는 테스트가 없음"]);
     console.log(`${name}: ${results.at(-1)[1]}`);
   }

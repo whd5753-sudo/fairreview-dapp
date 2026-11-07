@@ -30,8 +30,12 @@ function runTests(dir, command, label) {
 
 // 4단계: web 테스트 (기대값 표 · 화면)
 runTests("web", "npm test", "web 테스트 실패 (기대값 표와 다름)");
-// 8단계: 컨트랙트 테스트 (docs/테스트설계.md)
-runTests("contracts", "npx hardhat test", "컨트랙트 테스트 실패 (테스트 설계 표와 다름)");
+// 10단계: 오라클 테스트 (서명 · 판정)
+runTests("oracle", "npm test", "오라클 테스트 실패");
+// 8 · 10단계: 컨트랙트 테스트 (docs/테스트설계.md) — oracle/sign.mjs 를 쓰므로 oracle 설치가 먼저
+if (existsSync("oracle/node_modules")) {
+  runTests("contracts", "npx hardhat test", "컨트랙트 테스트 실패 (테스트 설계 표와 다름)");
+}
 
 if (problems.length) {
   console.error("[검사 실패]\n- " + problems.join("\n- "));

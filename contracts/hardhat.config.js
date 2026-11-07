@@ -34,7 +34,7 @@ module.exports = {
     version: SOLC_VERSION,
     settings: {
       optimizer: { enabled: true, runs: 200 },
-      evmVersion: "paris",
+      evmVersion: "cancun", // 10단계: OpenZeppelin 5.6 이 mcopy(cancun) 를 쓴다. Sepolia 는 cancun 이후 버전이라 문제없음
     },
   },
   defaultNetwork: "hardhat",

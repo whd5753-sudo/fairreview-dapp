@@ -1,0 +1,12 @@
+INFO:Detectors:
+FairReview.submitReview(uint256,uint8,string,uint16,bytes) (contracts/FairReview.sol#190-221) ignores return value by (signer,err,None) = ECDSA.tryRecover(digest,signature) (contracts/FairReview.sol#207)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+INFO:Detectors:
+FairReview.submitReview(uint256,uint8,string,uint16,bytes) (contracts/FairReview.sol#190-221) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > p.paidAt + REVIEW_WINDOW (contracts/FairReview.sol#199)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+FairReview.submitReview(uint256,uint8,string,uint16,bytes) (contracts/FairReview.sol#190-221) has a high cyclomatic complexity (12).
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cyclomatic-complexity
+INFO:Slither:. analyzed (9 contracts with 93 detectors), 3 result(s) found

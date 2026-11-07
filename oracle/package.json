@@ -1,0 +1,15 @@
+{
+  "name": "fairreview-oracle",
+  "version": "0.1.0",
+  "private": true,
+  "description": "10단계 AI 오라클 서버 (Sepolia · 로컬 전용)",
+  "type": "module",
+  "scripts": {
+    "keygen": "node keygen.mjs",
+    "start": "node server.mjs",
+    "test": "node --test oracle.test.mjs"
+  },
+  "dependencies": {
+    "ethers": "6.17.0"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "fairreview-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FairReview 스마트컨트랙트 (Hardhat 2 프로젝트, Sepolia·로컬 전용)",
+  "type": "commonjs",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "~2.0.9",
+    "@nomicfoundation/hardhat-ethers": "~3.0.9",
+    "@nomicfoundation/hardhat-network-helpers": "~1.0.13",
+    "chai": "^4.5.0",
+    "dotenv": "^16.6.1",
+    "ethers": "^6.17.0",
+    "hardhat": "~2.22.19",
+    "solc": "0.8.24"
+  }
+}

@@ -5,6 +5,7 @@ import { getStore } from "../data/stores.js";
 import ReviewForm from "../components/ReviewForm.jsx";
 import ResultCard from "../components/ResultCard.jsx";
 import StoreMissing from "../components/StoreMissing.jsx";
+import ChainSubmit from "../components/ChainSubmit.jsx";
 
 // 5단계 App 화면을 옮긴 것. 입력 글자 · 별점 · 결과는 이 화면의 상태로만 둔다 (Context 에 넣지 않음).
 export default function WriteReview() {
@@ -56,6 +57,8 @@ function ReviewChecker({ store }) {
         onCheck={check}
       />
       {result && <ResultCard result={result} />}
+      {/* 8단계: 검사 결과가 있을 때만 블록체인 제출 칸을 보여 준다 (입력이 바뀌면 결과와 함께 사라짐) */}
+      {result && <ChainSubmit store={store} rating={rating} content={content} verdict={result.verdict} />}
     </>
   );
 }

@@ -1,10 +1,18 @@
 // 6단계 화면 테스트 — docs/라우팅설계.md 6절의 8가지
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import App from "../App.jsx";
 import { WalletProvider } from "../state/WalletContext.jsx";
 import { STORES } from "../data/stores.js";
+
+// 8단계: 가게 상세가 블록체인 리뷰를 읽으므로, 테스트에서는 진짜 네트워크 대신 가짜 응답을 쓴다
+vi.mock("../contracts/client.js", () => ({
+  fetchPoints: vi.fn().mockResolvedValue(0),
+  fetchPayment: vi.fn().mockResolvedValue(null),
+  fetchStoreReviews: vi.fn().mockResolvedValue([]),
+  sendReview: vi.fn(),
+}));
 
 function renderAt(path) {
   return render(

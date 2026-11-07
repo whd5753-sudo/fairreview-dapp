@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router";
 import { getStore } from "../data/stores.js";
 import StoreMissing from "../components/StoreMissing.jsx";
+import ChainReviews from "../components/ChainReviews.jsx";
 
 export default function StoreDetail() {
   const { id } = useParams();
@@ -26,8 +27,11 @@ export default function StoreDetail() {
         </Link>
       </section>
 
+      <ChainReviews storeId={store.id} />
+
       <section className="card">
-        <h2>게시된 리뷰</h2>
+        <h2>예시 리뷰</h2>
+        <p className="muted small">6단계 화면용 예시 데이터입니다. 실제 기록은 위 "블록체인에 기록된 리뷰"에 있습니다.</p>
         <ul className="review-list">
           {store.reviews.map((review) => (
             <li key={review.content}>

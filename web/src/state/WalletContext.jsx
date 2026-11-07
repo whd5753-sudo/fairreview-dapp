@@ -1,12 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { fetchPoints } from "../contracts/client.js";
 
 // 6단계: 지갑 연결 상태만 앱 전체에 나눠 준다 (자주 바뀌지 않는 값만).
-// 서명 요청 · 개인키 · 니모닉은 이 단계에서 다루지 않는다.
+// 8단계: Sepolia 전환 · 내 포인트를 더했다. 서명은 리뷰 제출 버튼에서만 요청한다.
+// 개인키 · 니모닉은 다루지 않는다 (지갑 밖으로 나오지 않음).
 export const SEPOLIA_CHAIN_ID = "0xaa36a7";
 
 const WalletContext = createContext(null);
 
-function getProvider() {
+export function getProvider() {
   return typeof window !== "undefined" ? window.ethereum : undefined;
 }
 
@@ -14,6 +16,7 @@ export function WalletProvider({ children }) {
   const [account, setAccount] = useState(null);
   const [chainId, setChainId] = useState(null);
   const [error, setError] = useState(null);
+  const [points, setPoints] = useState(null);
 
   // 체인 · 계정 변경 이벤트를 듣고, 정리 함수에서 반드시 해제한다
   useEffect(() => {
@@ -60,6 +63,38 @@ export function WalletProvider({ children }) {
     }
   }, []);
 
+  // 8단계: MetaMask 에 Sepolia 로 바꿔 달라고 요청한다 (사용자가 MetaMask 창에서 승인)
+  const switchToSepolia = useCallback(async () => {
+    const ethereum = getProvider();
+    if (!ethereum?.request) {
+      setError("MetaMask 가 필요합니다");
+      return;
+    }
+    try {
+      await ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: SEPOLIA_CHAIN_ID }] });
+      setError(null);
+    } catch (e) {
+      setError(e?.code === 4001 ? "네트워크 전환을 취소했습니다" : "Sepolia 로 전환하지 못했습니다");
+    }
+  }, []);
+
+  // 8단계: 내 포인트 — 계정이 바뀌거나 리뷰를 제출한 뒤 다시 읽는다
+  const refreshPoints = useCallback(async () => {
+    if (!account) {
+      setPoints(null);
+      return;
+    }
+    try {
+      setPoints(await fetchPoints(account));
+    } catch {
+      setPoints(null); // 포인트를 못 읽어도 다른 화면은 그대로 쓸 수 있다
+    }
+  }, [account]);
+
+  useEffect(() => {
+    refreshPoints();
+  }, [refreshPoints]);
+
   // 화면 상태만 지운다 (MetaMask 연결 자체는 MetaMask 에서 끊는다)
   const disconnect = useCallback(() => {
     setAccount(null);
@@ -73,9 +108,12 @@ export function WalletProvider({ children }) {
       isSepolia: chainId === SEPOLIA_CHAIN_ID,
       connect,
       disconnect,
+      switchToSepolia,
+      points,
+      refreshPoints,
       error,
     }),
-    [account, chainId, connect, disconnect, error],
+    [account, chainId, connect, disconnect, switchToSepolia, points, refreshPoints, error],
   );
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
